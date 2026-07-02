@@ -1,0 +1,120 @@
+version: '3.8'
+
+networks:
+  placemux-network:
+    name: placemux-network
+    driver: bridge
+
+services:
+  # Auth Microservice - pulled from Amazon ECR
+  auth-service:
+    image: ${ECR_REGISTRY}/placemux-auth-service:latest
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - AUTH_DB_NAME=${AUTH_DB_NAME}
+      - REDIS_URL=${REDIS_URL}
+    networks:
+      - placemux-network
+    restart: always
+
+  # Company Microservice - pulled from Amazon ECR
+  company-service:
+    image: ${ECR_REGISTRY}/placemux-company-service:latest
+    container_name: company-service
+    ports:
+      - "3002:3002"
+      - "5002:5002"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - COMPANY_DB_NAME=${COMPANY_DB_NAME}
+    networks:
+      - placemux-network
+    restart: always
+
+  # Interview Microservice - pulled from Amazon ECR
+  interview-service:
+    image: ${ECR_REGISTRY}/placemux-interview-service:latest
+    container_name: interview-service
+    ports:
+      - "3005:3005"
+      - "5003:5003"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - INTERVIEW_DB_NAME=${INTERVIEW_DB_NAME}
+    networks:
+      - placemux-network
+    restart: always
+
+  # Admin Microservice - pulled from Amazon ECR
+  admin-service:
+    image: ${ECR_REGISTRY}/placemux-admin-service:latest
+    container_name: admin-service
+    ports:
+      - "3006:3006"
+      - "5006:5006"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - AUTH_DB_NAME=${AUTH_DB_NAME}
+      - COMPANY_DB_NAME=${COMPANY_DB_NAME}
+      - INTERVIEW_DB_NAME=${INTERVIEW_DB_NAME}
+    networks:
+      - placemux-network
+    restart: always
+
+  # API Gateway - pulled from Amazon ECR
+  api-gateway:
+    image: ${ECR_REGISTRY}/placemux-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - AUTH_SERVICE_ADDR=auth-service:5001
+      - COMPANY_SERVICE_ADDR=company-service:5002
+      - INTERVIEW_SERVICE_ADDR=interview-service:5003
+      - ADMIN_SERVICE_ADDR=admin-service:5006
+    depends_on:
+      - auth-service
+      - company-service
+      - interview-service
+      - admin-service
+    networks:
+      - placemux-network
+    restart: always
+
+  # React Frontend Dashboard - pulled from Amazon ECR
+  frontend:
+    image: ${ECR_REGISTRY}/placemux-frontend:latest
+    container_name: placemux-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - placemux-network
+    restart: always

@@ -1,0 +1,93 @@
+name: Deploy PlaceMux Backend to AWS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Build React Frontend Assets
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Services to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Build and push API Gateway
+          docker build -t $$ECR_REGISTRY/placemux-gateway:latest -f gateway/Dockerfile .
+          docker push $$ECR_REGISTRY/placemux-gateway:latest
+
+          # Build and push Auth Service
+          docker build -t $$ECR_REGISTRY/placemux-auth-service:latest -f services/auth/Dockerfile .
+          docker push $$ECR_REGISTRY/placemux-auth-service:latest
+
+          # Build and push Company Service
+          docker build -t $$ECR_REGISTRY/placemux-company-service:latest -f services/company/Dockerfile .
+          docker push $$ECR_REGISTRY/placemux-company-service:latest
+
+          # Build and push Interview Service
+          docker build -t $$ECR_REGISTRY/placemux-interview-service:latest -f services/interview/Dockerfile .
+          docker push $$ECR_REGISTRY/placemux-interview-service:latest
+
+          # Build and push Admin Service
+          docker build -t $$ECR_REGISTRY/placemux-admin-service:latest -f services/admin/Dockerfile .
+          docker push $$ECR_REGISTRY/placemux-admin-service:latest
+
+          # Build and push React Frontend
+          docker build -t $$ECR_REGISTRY/placemux-frontend:latest -f frontend/Dockerfile ./frontend
+          docker push $$ECR_REGISTRY/placemux-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Log into ECR on EC2
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }}
+            
+            # Prepare deployment directory
+            mkdir -p ~/placemux
+            cd ~/placemux
+            
+            # Pull docker-compose file and env configuration
+            echo "${{ secrets.PROD_ENV_FILE }}" > .env
+            
+            # Setup production docker-compose
+            cat << 'EOF' > docker-compose.prod.yml
+            ${{ secrets.DOCKER_COMPOSE_PROD_YML }}
+            EOF
+            
+            # Pull latest ECR images and spin up containers
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # Prune old images
+            docker image prune -f

@@ -1,0 +1,161 @@
+version: '3.8'
+
+networks:
+  placemux-network:
+    name: placemux-network
+    driver: bridge
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: placemux-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - placemux-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache Service
+  redis:
+    image: redis:alpine
+    container_name: placemux-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - placemux-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Auth Microservice
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - placemux-network
+
+  # Company Microservice
+  company-service:
+    build:
+      context: .
+      dockerfile: services/company/Dockerfile
+    container_name: company-service
+    ports:
+      - "3002:3002"
+      - "5002:5002"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - placemux-network
+
+  # Interview Microservice
+  interview-service:
+    build:
+      context: .
+      dockerfile: services/interview/Dockerfile
+    container_name: interview-service
+    ports:
+      - "3005:3005"
+      - "5003:5003"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - placemux-network
+
+  # Admin Microservice
+  admin-service:
+    build:
+      context: .
+      dockerfile: services/admin/Dockerfile
+    container_name: admin-service
+    ports:
+      - "3006:3006"
+      - "5006:5006"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - placemux-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - "3010:3000"
+    env_file:
+      - .env
+    environment:
+      - AUTH_SERVICE_ADDR=auth-service:5001
+      - COMPANY_SERVICE_ADDR=company-service:5002
+      - INTERVIEW_SERVICE_ADDR=interview-service:5003
+      - ADMIN_SERVICE_ADDR=admin-service:5006
+    depends_on:
+      - auth-service
+      - company-service
+      - interview-service
+      - admin-service
+    networks:
+      - placemux-network
+
+  # React Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: placemux-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - placemux-network
+
+volumes:
+  pgdata:
+    driver: local

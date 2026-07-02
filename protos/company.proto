@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package company;
+
+service CompanyService {
+  rpc CreateCompany (CreateCompanyRequest) returns (CompanyResponse);
+  rpc GetCompany (GetCompanyRequest) returns (CompanyResponse);
+  rpc ListCompanies (ListCompaniesRequest) returns (ListCompaniesResponse);
+}
+
+message CreateCompanyRequest {
+  string name = 1;
+  string industry = 2;
+  string description = 3;
+}
+
+message GetCompanyRequest {
+  string id = 1;
+}
+
+message CompanyResponse {
+  string id = 1;
+  string name = 2;
+  string industry = 3;
+  string description = 4;
+}
+
+message ListCompaniesRequest {}
+
+message ListCompaniesResponse {
+  repeated CompanyResponse companies = 1;
+}

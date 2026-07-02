@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package admin;
+
+service AdminService {
+  rpc GetSystemStats (StatsRequest) returns (StatsResponse);
+}
+
+message StatsRequest {}
+
+message StatsResponse {
+  int32 total_users = 1;
+  int32 total_companies = 2;
+  int32 total_interviews = 3;
+}

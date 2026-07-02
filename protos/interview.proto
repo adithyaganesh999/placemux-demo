@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package interview;
+
+service InterviewService {
+  rpc ScheduleInterview (ScheduleInterviewRequest) returns (InterviewResponse);
+  rpc GetInterview (GetInterviewRequest) returns (InterviewResponse);
+  rpc ListInterviews (ListInterviewsRequest) returns (ListInterviewsResponse);
+}
+
+message ScheduleInterviewRequest {
+  string candidate_id = 1;
+  string company_id = 2;
+  string scheduled_time = 3;
+  string role = 4;
+}
+
+message GetInterviewRequest {
+  string id = 1;
+}
+
+message InterviewResponse {
+  string id = 1;
+  string candidate_id = 2;
+  string company_id = 3;
+  string scheduled_time = 4;
+  string role = 5;
+  string status = 6;
+}
+
+message ListInterviewsRequest {
+  string candidate_id = 1;
+}
+
+message ListInterviewsResponse {
+  repeated InterviewResponse interviews = 1;
+}
