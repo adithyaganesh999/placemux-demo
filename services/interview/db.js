@@ -7,6 +7,7 @@ const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.INTERVIEW_DB_NAME || 'interview_db',
+  ssl: process.env.DB_HOST !== 'postgres' && process.env.DB_HOST !== 'localhost' ? { rejectUnauthorized: false } : false
 });
 
 module.exports = {
