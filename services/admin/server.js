@@ -14,9 +14,11 @@ const dbPassword = process.env.DB_PASSWORD || 'postgres';
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = process.env.DB_PORT || 5432;
 
-const authPool = new Pool({ user: dbUser, password: dbPassword, host: dbHost, port: dbPort, database: process.env.AUTH_DB_NAME || 'auth_db' });
-const companyPool = new Pool({ user: dbUser, password: dbPassword, host: dbHost, port: dbPort, database: process.env.COMPANY_DB_NAME || 'company_db' });
-const interviewPool = new Pool({ user: dbUser, password: dbPassword, host: dbHost, port: dbPort, database: process.env.INTERVIEW_DB_NAME || 'interview_db' });
+const sslConfig = dbHost !== 'postgres' && dbHost !== 'localhost' ? { rejectUnauthorized: false } : false;
+
+const authPool = new Pool({ user: dbUser, password: dbPassword, host: dbHost, port: dbPort, database: process.env.AUTH_DB_NAME || 'auth_db', ssl: sslConfig });
+const companyPool = new Pool({ user: dbUser, password: dbPassword, host: dbHost, port: dbPort, database: process.env.COMPANY_DB_NAME || 'company_db', ssl: sslConfig });
+const interviewPool = new Pool({ user: dbUser, password: dbPassword, host: dbHost, port: dbPort, database: process.env.INTERVIEW_DB_NAME || 'interview_db', ssl: sslConfig });
 
 // Load proto
 const PROTO_PATH = path.resolve(__dirname, '../../protos/admin.proto');
