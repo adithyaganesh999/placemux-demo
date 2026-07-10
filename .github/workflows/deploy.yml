@@ -33,28 +33,28 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           # Build and push API Gateway
-          docker build -t $$ECR_REGISTRY/placemux-gateway:latest -f gateway/Dockerfile .
-          docker push $$ECR_REGISTRY/placemux-gateway:latest
+          docker build -t $ECR_REGISTRY/placemux-gateway:latest -f gateway/Dockerfile .
+          docker push $ECR_REGISTRY/placemux-gateway:latest
 
           # Build and push Auth Service
-          docker build -t $$ECR_REGISTRY/placemux-auth-service:latest -f services/auth/Dockerfile .
-          docker push $$ECR_REGISTRY/placemux-auth-service:latest
+          docker build -t $ECR_REGISTRY/placemux-auth-service:latest -f services/auth/Dockerfile .
+          docker push $ECR_REGISTRY/placemux-auth-service:latest
 
           # Build and push Company Service
-          docker build -t $$ECR_REGISTRY/placemux-company-service:latest -f services/company/Dockerfile .
-          docker push $$ECR_REGISTRY/placemux-company-service:latest
+          docker build -t $ECR_REGISTRY/placemux-company-service:latest -f services/company/Dockerfile .
+          docker push $ECR_REGISTRY/placemux-company-service:latest
 
           # Build and push Interview Service
-          docker build -t $$ECR_REGISTRY/placemux-interview-service:latest -f services/interview/Dockerfile .
-          docker push $$ECR_REGISTRY/placemux-interview-service:latest
+          docker build -t $ECR_REGISTRY/placemux-interview-service:latest -f services/interview/Dockerfile .
+          docker push $ECR_REGISTRY/placemux-interview-service:latest
 
           # Build and push Admin Service
-          docker build -t $$ECR_REGISTRY/placemux-admin-service:latest -f services/admin/Dockerfile .
-          docker push $$ECR_REGISTRY/placemux-admin-service:latest
+          docker build -t $ECR_REGISTRY/placemux-admin-service:latest -f services/admin/Dockerfile .
+          docker push $ECR_REGISTRY/placemux-admin-service:latest
 
           # Build and push React Frontend
-          docker build -t $$ECR_REGISTRY/placemux-frontend:latest -f frontend/Dockerfile ./frontend
-          docker push $$ECR_REGISTRY/placemux-frontend:latest
+          docker build -t $ECR_REGISTRY/placemux-frontend:latest -f frontend/Dockerfile ./frontend
+          docker push $ECR_REGISTRY/placemux-frontend:latest
 
   deploy:
     needs: build-and-push
