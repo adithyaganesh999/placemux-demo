@@ -194,10 +194,16 @@ The API Gateway handles REST requests and translates them internally to microser
 
 ## 🌐 Production Deployment (AWS & Neon Postgres)
 
-The production stack configuration is defined in [docker-compose.prod.yml](file:///C:/Users/adith/OneDrive/Desktop/micro/docker-compose.prod.yml):
-1. **ECR Images**: The containers pull the production-ready microservice images from Amazon ECR using the `${ECR_REGISTRY}` repository variable.
-2. **Serverless Neon PostgreSQL**: The production database is serverless Neon PostgreSQL. The local `postgres` container is removed from production, and the microservices connect directly to Neon using the `.env` variables:
-   - `DB_HOST`: Your Neon PostgreSQL hostname (e.g. `ep-xxx-yyy.us-east-1.aws.neon.tech`).
-   - `DB_USER`, `DB_PASSWORD`.
-   - `DB_PORT`: `5432`.
-3. **Hosted Redis**: The production Redis caching instance (e.g., AWS ElastiCache) is connected using `REDIS_URL`. The local `redis` container is removed from production.
+The production stack configuration is defined in [docker-compose.prod.yml](file:///C:/Users/adith/OneDrive/Desktop/micro/docker-compose.prod.yml) and automated via GitHub Actions:
+
+1. **GitHub Actions CI/CD**:
+   * On pushes to `main`, `.github/workflows/deploy.yml` builds all 6 microservice and frontend Docker images.
+   * Logs into your private **Amazon ECR** registry and pushes the built images.
+   * Establishes a secure SSH connection to your **AWS EC2** instance (`3.110.157.187`) to log into ECR, pull the latest images, and launch the stack.
+2. **Nginx Reverse Proxy**:
+   * The frontend container is built using a multi-stage Nginx setup.
+   * Nginx serves the React dashboard on port `5173` and automatically reverse-proxies `/api/*` requests to the `api-gateway` container internally on the private Docker network, bypassing CORS and port exposure.
+3. **Serverless Neon PostgreSQL**:
+   * The production database is serverless Neon PostgreSQL. The local `postgres` container is removed, and services connect directly to Neon over SSL.
+4. **Local Redis Cache**:
+   * A local production-grade `redis` cache container is started on the EC2 host to manage access tokens for `auth-service` securely.
