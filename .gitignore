@@ -4,3 +4,8 @@ pgdata/
 *.log
 .DS_Store
 package-lock.json
+# Terraform ignore rules
+terraform/.terraform/
+terraform/terraform.exe
+terraform/*.tfstate
+terraform/*.tfstate.*
