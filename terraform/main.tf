@@ -205,9 +205,9 @@ resource "aws_instance" "placemux_server" {
   # User Data Script runs automatically as Root on first boot
   user_data = <<-EOF
               #!/bin/bash
-              # 1. Update OS packages
+              # 1. Update OS packages and install AWS CLI
               apt-get update -y
-              apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
+              apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release awscli
 
               # 2. Configure 2GB Swap space (crucial for running 12 containers on 2GB RAM)
               fallocate -l 2G /swapfile

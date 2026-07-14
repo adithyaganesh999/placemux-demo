@@ -63,6 +63,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Copy Configs and Compose to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.prod.yml,monitoring/"
+          target: "~/placemux"
+
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -79,13 +88,8 @@ jobs:
             mkdir -p ~/placemux
             cd ~/placemux
             
-            # Pull docker-compose file and env configuration
+            # Pull env configuration
             echo "${{ secrets.PROD_ENV_FILE }}" > .env
-            
-            # Setup production docker-compose
-            cat << 'EOF' > docker-compose.prod.yml
-            ${{ secrets.DOCKER_COMPOSE_PROD_YML }}
-            EOF
             
             # Export ECR Registry for Docker Compose
             export ECR_REGISTRY=${{ secrets.AWS_ECR_REGISTRY }}
