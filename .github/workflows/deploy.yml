@@ -85,6 +85,9 @@ jobs:
             ${{ secrets.DOCKER_COMPOSE_PROD_YML }}
             EOF
             
+            # Export ECR Registry for Docker Compose
+            export ECR_REGISTRY=${{ secrets.AWS_ECR_REGISTRY }}
+            
             # Pull latest ECR images and spin up containers
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
