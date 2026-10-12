@@ -2,7 +2,7 @@ name: Deploy PlaceMux Backend to AWS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, testing ]
 
 jobs:
   build-and-push:
