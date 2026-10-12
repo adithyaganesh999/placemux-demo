@@ -79,19 +79,34 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            mkdir -p /home/ubuntu/placemux
+            cd /home/ubuntu/placemux
+
+            # Ensure docker-compose.prod.yml is present
+            if [ -f /home/ubuntu/docker-compose.prod.yml ]; then
+              cp /home/ubuntu/docker-compose.prod.yml /home/ubuntu/placemux/
+            fi
+            if [ -d "/home/ubuntu/~/placemux" ]; then
+              cp -r "/home/ubuntu/~/placemux"/* /home/ubuntu/placemux/ 2>/dev/null || true
+            fi
+            if [ ! -f /home/ubuntu/placemux/docker-compose.prod.yml ]; then
+              curl -sSL https://raw.githubusercontent.com/adithyaganesh999/placemux-demo/testing/docker-compose.prod.yml -o /home/ubuntu/placemux/docker-compose.prod.yml
+            fi
+
+            echo "${{ secrets.PROD_ENV_FILE }}" > /home/ubuntu/placemux/.env
+            export ECR_REGISTRY=${{ secrets.AWS_ECR_REGISTRY }}
             export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
             export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }}
-            
-            mkdir -p ~/placemux
-            cd ~/placemux
-            
-            echo "${{ secrets.PROD_ENV_FILE }}" > .env
-            export ECR_REGISTRY=${{ secrets.AWS_ECR_REGISTRY }}
-            
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            
-            docker compose -f docker-compose.prod.yml ps
+
+            # Log into ECR
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }} || true
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }} || true
+
+            # Pull and start containers
+            sudo docker compose -f docker-compose.prod.yml pull || docker compose -f docker-compose.prod.yml pull
+            sudo docker compose -f docker-compose.prod.yml up -d --remove-orphans || docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Verify running containers
+            sudo docker ps
 
 
