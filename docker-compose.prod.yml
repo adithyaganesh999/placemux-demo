@@ -6,6 +6,16 @@ networks:
     driver: bridge
 
 services:
+  # Redis Cache Service
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - placemux-network
+    restart: always
+
   # Auth Microservice - pulled from Amazon ECR
   auth-service:
     image: ${ECR_REGISTRY}/placemux-auth-service:latest
