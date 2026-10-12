@@ -112,6 +112,7 @@ services:
     image: ${ECR_REGISTRY}/placemux-frontend:latest
     container_name: placemux-frontend
     ports:
+      - "80:80"
       - "5173:80"
     depends_on:
       - api-gateway
